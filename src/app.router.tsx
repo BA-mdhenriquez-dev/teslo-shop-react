@@ -15,6 +15,10 @@ import { RegisterPage } from './auth/pages/register/RegisterPage';
 import { DashboardPage } from './admin/pages/dashboard/DashboardPage';
 import { AdminProductPage } from './admin/pages/product/AdminProductPage';
 import { AdminProductsPage } from './admin/pages/products/AdminProductsPage';
+import {
+  AdminRoute,
+  NotAuthenticatedRoute,
+} from './components/routes/ProtectedRoutes';
 
 const AuthLayout = lazy(() => import('./auth/layouts/AuthLayout'));
 const AdminLayout = lazy(() => import('./admin/layouts/AdminLayout'));
@@ -41,11 +45,15 @@ export const appRouter = createBrowserRouter([
   // Auth Routes
   {
     path: '/auth',
-    element: <AuthLayout />,
+    element: (
+      <NotAuthenticatedRoute>
+        <AuthLayout />
+      </NotAuthenticatedRoute>
+    ),
     children: [
       {
         index: true,
-        element: <Navigate to='/auth/login' />,
+        element: <Navigate to="/auth/login" />,
       },
       {
         path: 'login',
@@ -60,7 +68,11 @@ export const appRouter = createBrowserRouter([
   // Admin Routes
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: (
+      <AdminRoute>
+        <AdminLayout />
+      </AdminRoute>
+    ),
     children: [
       {
         index: true,
@@ -78,6 +90,6 @@ export const appRouter = createBrowserRouter([
   },
   {
     path: '*',
-    element: <Navigate to='/' />,
+    element: <Navigate to="/" />,
   },
 ]);

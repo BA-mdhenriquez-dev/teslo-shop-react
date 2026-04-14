@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router';
 
@@ -13,14 +13,27 @@ interface Props {
   product: Product;
   title: string;
   subtitle: string;
+  isPending: boolean;
 
   // Methods
-  onSubmit: (productLike: Partial<Product>) => Promise<void>;
+  onSubmit: (
+    productLike: Partial<Product> & { files?: File[] },
+  ) => Promise<void>;
 }
 
 const availableSizes: Size[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
+interface FormInputs extends Product {
+  files: File[];
+}
+
+export const ProductForm = ({
+  product,
+  title,
+  subtitle,
+  onSubmit,
+  isPending,
+}: Props) => {
   const [dragActive, setDragActive] = useState(false);
   const {
     register,
@@ -29,7 +42,7 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
     getValues,
     setValue,
     watch,
-  } = useForm({
+  } = useForm<FormInputs>({
     defaultValues: product,
   });
 
@@ -38,6 +51,12 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
   const currentStock = watch('stock');
 
   const lableInputRef = useRef<HTMLInputElement>(null);
+
+  const [files, setFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    setFiles([]);
+  }, [product]);
 
   const addTag = () => {
     const newTag = lableInputRef.current!.value;
@@ -88,12 +107,22 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
     e.stopPropagation();
     setDragActive(false);
     const files = e.dataTransfer.files;
-    console.log(files);
+
+    if (!files) return;
+
+    setFiles((prev) => [...prev, ...Array.from(files)]);
+    const currentFiles = getValues('files') || [];
+    setValue('files', [...currentFiles, ...Array.from(files)]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    console.log(files);
+
+    if (!files) return;
+
+    setFiles((prev) => [...prev, ...Array.from(files)]);
+    const currentFiles = getValues('files') || [];
+    setValue('files', [...currentFiles, ...Array.from(files)]);
   };
 
   return (
@@ -101,14 +130,14 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
       <div className="flex justify-between items-center">
         <AdminTitle title={title} sutitle={subtitle} />
         <div className="flex justify-end mb-10 gap-4">
-          <Button variant="outline">
+          <Button variant="outline" type="button">
             <Link to="/admin/products" className="flex items-center gap-2">
               <X className="w-4 h-4" />
               Cancelar
             </Link>
           </Button>
 
-          <Button>
+          <Button type="submit" disabled={isPending}>
             <SaveAll className="w-4 h-4" />
             Guardar cambios
           </Button>
@@ -352,7 +381,11 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
                     className="flex-1 px-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                   />
                   {/* TODO: */}
-                  <Button onClick={addTag} className="px-4 py-2 rounded-lg">
+                  <Button
+                    onClick={addTag}
+                    className="px-4 py-2 rounded-lg"
+                    type="button"
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -425,6 +458,27 @@ export const ProductForm = ({ product, title, subtitle, onSubmit }: Props) => {
                         {image}
                       </p>
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Imagenes por cargar */}
+              <div
+                className={cn('mt-6 space-y-3', {
+                  hidden: files.length === 0,
+                })}
+              >
+                <h3 className="text-sm font-medium text-slate-700">
+                  Imágenes por cargar
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {files.map((file, index) => (
+                    <img
+                      key={index}
+                      src={URL.createObjectURL(file)}
+                      alt="Product"
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   ))}
                 </div>
               </div>
